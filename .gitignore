@@ -1,37 +1,11 @@
-# Virtual environment
-bin/
-include/
-lib/
-pyvenv.cfg
-
-.cache
+# Local runtime files
+.env
+.venv/
+__pycache__/
 *.pyc
-node_modules
-yarn-error.log
 
-/public
-# Build directory
-/build
-.DS_Store
-.sass-cache/
-_posts/
-_site/
-
-.mypy_cache
-
-/.vscode
-.idea
-
-.Python
-
-config.yaml
-
-
-/FIT_OUT
-/webdav-db
-/webdav-fit
-/garmin-fit
-/coros-fit
-/db
-/backups
-sync-coros-garmin.ps1
+# Data
+db/
+garmin-fit/
+coros-fit/
+*.log
