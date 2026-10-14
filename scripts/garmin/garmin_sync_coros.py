@@ -58,10 +58,40 @@ if __name__ == "__main__":
   COROS_PASSWORD = SYNC_CONFIG["COROS_PASSWORD"]
   corosClient = CorosClient(COROS_EMAIL, COROS_PASSWORD)
   corosClient.login()
+
+  # Build Coros activity index for dedup: {startTime_sec: set of labelIds}
+  print("Fetching existing Coros activities for dedup...")
+  coros_existing = corosClient.getAllActivities()
+  coros_index = {}
+  for a in coros_existing:
+      ts = a.get("startTime")
+      if ts:
+          coros_index[int(ts)] = a.get("labelId")
+  print(f"Coros activity index built: {len(coros_index)} entries")
+
   all_activities = garminClient.getAllActivities()
   if all_activities == None or len(all_activities) == 0:
       exit()
+
+  # Filter out activities that already exist in Coros
+  new_activities = []
+  skipped = 0
   for activity in all_activities:
+      activity_id = activity["activityId"]
+      begin_ts = activity.get("beginTimestamp")
+      if begin_ts:
+          begin_sec = int(begin_ts / 1000)
+          if begin_sec in coros_index:
+              skipped += 1
+              print(f"  SKIP {activity_id}: already in Coros (startTime={begin_sec})")
+              # Mark as synced so we don't re-check next time
+              garmin_db.saveActivity(activity_id)
+              garmin_db.updateSyncStatus(activity_id)
+              continue
+      new_activities.append(activity)
+
+  print(f"New activities to sync: {len(new_activities)} (skipped {skipped} duplicates)")
+  for activity in new_activities:
       activity_id = activity["activityId"]
       garmin_db.saveActivity(activity_id)
 
