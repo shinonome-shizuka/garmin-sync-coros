@@ -126,6 +126,8 @@ if __name__ == "__main__":
         print(f"{id}.fit upload status {upload_status}")
       if upload_status in ("SUCCESS", "DUPLICATE_ACTIVITY"):
         coros_db.updateSyncStatus(id)
+      else:
+        coros_db.updateExceptionSyncStatus(id)
       
     except Exception as err:
       print(err)

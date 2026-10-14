@@ -92,7 +92,11 @@ class GarminClient:
         print(f"  -> upload result: {result}")
     except Exception as e:
       print(f"  -> exception: {e}")
-      status = "UPLOAD_EXCEPTION"
+      err_str = str(e)
+      if "Duplicate" in err_str or "409" in err_str:
+        status = "DUPLICATE_ACTIVITY"
+      else:
+        status = "UPLOAD_EXCEPTION"
     return status
 
 
