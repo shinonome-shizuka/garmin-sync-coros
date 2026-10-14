@@ -51,6 +51,15 @@ if __name__ == "__main__":
 
   garminClient = GarminClient(GARMIN_EMAIL, GARMIN_PASSWORD, GARMIN_AUTH_DOMAIN, GARMIN_NEWEST_NUM)
 
+  # Build Garmin activity index for dedup: {startTime_sec: activityId}
+  print("Fetching existing Garmin activities for dedup...")
+  garmin_existing = garminClient.getAllActivities()
+  garmin_index = {}
+  for a in garmin_existing:
+      ts = a.get("beginTimestamp")
+      if ts:
+          garmin_index[int(ts / 1000)] = a.get("activityId")
+  print(f"Garmin activity index built: {len(garmin_index)} entries")
 
   ## db 名称
   db_name = "coros.db"
@@ -62,7 +71,24 @@ if __name__ == "__main__":
   all_activities = corosClient.getAllActivities()
   if all_activities == None or len(all_activities) == 0:
       exit()
+
+  # Filter out activities that already exist in Garmin
+  new_activities = []
+  skipped = 0
   for activity in all_activities:
+      activity_id = activity["labelId"]
+      sport_type = activity["sportType"]
+      start_ts = activity.get("startTime")
+      if start_ts and int(start_ts) in garmin_index:
+          skipped += 1
+          print(f"  SKIP {activity_id}: already in Garmin (startTime={start_ts})")
+          coros_db.saveActivity(activity_id, sport_type)
+          coros_db.updateSyncStatus(activity_id)
+          continue
+      new_activities.append(activity)
+
+  print(f"New activities to sync: {len(new_activities)} (skipped {skipped} duplicates)")
+  for activity in new_activities:
       activity_id = activity["labelId"]
       sport_type = activity["sportType"]
       coros_db.saveActivity(activity_id, sport_type)
